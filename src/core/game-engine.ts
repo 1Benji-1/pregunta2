@@ -236,8 +236,9 @@ export class GameEngine {
         lastSliceUnderPointer = currentSlice;
         soundEngine.playWheelTick(1 - progress);
         if (pointerEl) {
+          pointerEl.classList.remove('tick-bounce');
+          void pointerEl.offsetWidth;
           pointerEl.classList.add('tick-bounce');
-          setTimeout(() => pointerEl.classList.remove('tick-bounce'), 55);
         }
       }
 

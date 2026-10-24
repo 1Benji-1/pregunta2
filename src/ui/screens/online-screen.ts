@@ -178,14 +178,15 @@ export class OnlineScreen {
       multiplayerService.listenToRoom({
         onStateUpdate: (savedState) => {
           if (!savedState) return;
+          if (gameEngine.activeTurnContext) {
+            return;
+          }
           const wasNull = !gameEngine.state;
           gameEngine.state = StateManager.sanitize(savedState);
           if (wasNull) {
             ScreenManager.showScreen('boardScreen');
           }
-          if (!gameEngine.activeTurnContext) {
-            gameEngine.renderBoard();
-          }
+          gameEngine.renderBoard();
         },
         onAction: (action) => gameEngine.handleRemoteAction(action)
       });

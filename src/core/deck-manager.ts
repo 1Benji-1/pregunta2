@@ -11,7 +11,10 @@ export class DeckManager {
 
   public async loadCards(): Promise<Card[]> {
     try {
-      const resp = await fetch('preguntas.json');
+      let resp = await fetch('/preguntas.json');
+      if (!resp.ok) {
+        resp = await fetch('preguntas.json');
+      }
       if (resp.ok) {
         const json = await resp.json();
         if (Array.isArray(json) && json.length > 0) {
@@ -19,7 +22,18 @@ export class DeckManager {
           return this.allCards;
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      try {
+        const resp2 = await fetch('preguntas.json');
+        if (resp2.ok) {
+          const json2 = await resp2.json();
+          if (Array.isArray(json2) && json2.length > 0) {
+            this.allCards = json2;
+            return this.allCards;
+          }
+        }
+      } catch (__) {}
+    }
 
     // Fallback si estuviera en window.PREGUNTAS_DATA
     const fallback = (window as any).PREGUNTAS_DATA;

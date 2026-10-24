@@ -256,16 +256,11 @@ export class QuestionModal {
     const correctIndex = questionObj.respuesta_correcta;
     const letters = ['A', 'B', 'C', 'D'];
 
-    // Actualizar barra superior de instrucción
+    // Ocultar barra superior de instrucción en la pantalla de resolución
     const instructEl = document.getElementById('qReaderInstructionBar');
     if (instructEl) {
-      const whoMarked = isOnline
-        ? (isMyTurn ? 'Tu rival marcó por ti' : 'Marcaste por tu rival')
-        : 'Respuesta registrada';
-      instructEl.innerHTML = `
-        🔔 <strong>${whoMarked}</strong>: Opción <strong>${letters[selectedIndex]}</strong> · ${isCorrect ? '✅ ¡CORRECTA!' : '❌ INCORRECTA'}
-      `;
-      instructEl.style.background = isCorrect ? '#065f46' : '#991b1b';
+      instructEl.style.display = 'none';
+      instructEl.innerHTML = '';
     }
 
     // Marcar visualmente botones de opciones
@@ -280,24 +275,20 @@ export class QuestionModal {
           btn.classList.add('correct');
           const badge = document.createElement('span');
           badge.className = 'answer-selected-badge correct-badge';
-          badge.textContent = isOnline && isMyTurn
-            ? '👉 MARCADA POR TU RIVAL (¡ACIERTO!)'
-            : '👉 RESPUESTA MARCADA (¡ACIERTO!)';
+          badge.textContent = '✓ CORRECTA';
           btn.appendChild(badge);
         } else {
           btn.classList.add('wrong');
           const badge = document.createElement('span');
           badge.className = 'answer-selected-badge wrong-badge';
-          badge.textContent = isOnline && isMyTurn
-            ? '👉 MARCADA POR TU RIVAL (FALLADA)'
-            : '👉 RESPUESTA MARCADA (FALLADA)';
+          badge.textContent = '✗ MARCADA';
           btn.appendChild(badge);
         }
       } else if (idx === correctIndex && !isCorrect) {
         btn.classList.add('correct');
         const badge = document.createElement('span');
         badge.className = 'answer-correct-badge';
-        badge.textContent = '✓ RESPUESTA CORRECTA';
+        badge.textContent = '✓ CORRECTA';
         btn.appendChild(badge);
       }
     });

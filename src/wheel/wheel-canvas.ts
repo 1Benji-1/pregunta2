@@ -2,6 +2,9 @@ import { WHEEL_SLICES } from '../types/category.types';
 
 export class WheelRenderer {
   private loadedImages: Record<string, HTMLImageElement> = {};
+  private offscreenCanvas: HTMLCanvasElement | null = null;
+  private offscreenWidth: number = 520;
+  private offscreenHeight: number = 520;
 
   public async preloadImages(): Promise<void> {
     if (typeof Image === 'undefined') return;
@@ -14,6 +17,7 @@ export class WheelRenderer {
           const img = new Image();
           img.onload = () => {
             this.loadedImages[src] = img;
+            this.buildOffscreenCache();
             resolve();
           };
           img.onerror = () => resolve();
@@ -22,25 +26,37 @@ export class WheelRenderer {
     );
 
     await Promise.all(promises);
+    this.buildOffscreenCache();
   }
 
-  public draw(canvas: HTMLCanvasElement | null, wheelAngle: number): void {
-    if (!canvas || typeof canvas.getContext !== 'function') return;
-    const ctx = canvas.getContext('2d');
+  /**
+   * Renderiza el disco completo de la ruleta una sola vez en un canvas fuera de pantalla (Offscreen Cache).
+   * Esto elimina los gradientes repetidos y el costo masivo de shadowBlur por frame, logrando 60-120fps fluidos.
+   */
+  public buildOffscreenCache(width: number = 520, height: number = 520): void {
+    if (typeof document === 'undefined') return;
+
+    if (!this.offscreenCanvas) {
+      this.offscreenCanvas = document.createElement('canvas');
+    }
+    this.offscreenCanvas.width = width;
+    this.offscreenCanvas.height = height;
+    this.offscreenWidth = width;
+    this.offscreenHeight = height;
+
+    const ctx = this.offscreenCanvas.getContext('2d');
     if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const outerRadius = w / 2 - 8;
+    const cx = width / 2;
+    const cy = height / 2;
+    const outerRadius = width / 2 - 8;
     const rimRadius = outerRadius - 14;
     const numSlices = WHEEL_SLICES.length;
     const arc = (Math.PI * 2) / numSlices;
 
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, width, height);
 
-    // Aro exterior blanco estilo Preguntados
+    // 1. Aro exterior blanco estilo Preguntados
     ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, outerRadius, 0, Math.PI * 2);
@@ -51,10 +67,10 @@ export class WheelRenderer {
     ctx.stroke();
     ctx.restore();
 
-    // Dibujar las 7 secciones radiales
+    // 2. Las 7 secciones radiales
     for (let i = 0; i < numSlices; i++) {
       const slice = WHEEL_SLICES[i];
-      const startAngle = wheelAngle + i * arc;
+      const startAngle = i * arc;
       const endAngle = startAngle + arc;
       const midAngle = startAngle + arc / 2;
 
@@ -64,7 +80,7 @@ export class WheelRenderer {
       ctx.arc(cx, cy, rimRadius, startAngle, endAngle);
       ctx.closePath();
 
-      // Gradiente radial para dar profundidad 3D
+      // Gradiente radial
       const grad = ctx.createRadialGradient(cx, cy, 30, cx, cy, rimRadius);
       grad.addColorStop(0, slice.lightColor || '#ffffff');
       grad.addColorStop(0.35, slice.color);
@@ -77,7 +93,7 @@ export class WheelRenderer {
       ctx.stroke();
       ctx.restore();
 
-      // Dibujar icono o personaje
+      // Icono o personaje
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(midAngle);
@@ -107,11 +123,11 @@ export class WheelRenderer {
       ctx.restore();
     }
 
-    // Dibujar clavijas perimetrales
+    // 3. Clavijas perimetrales
     const numPins = numSlices * 4;
     const pinRadius = outerRadius - 7;
     for (let p = 0; p < numPins; p++) {
-      const pAngle = wheelAngle + (p * (Math.PI * 2)) / numPins;
+      const pAngle = (p * (Math.PI * 2)) / numPins;
       const px = cx + Math.cos(pAngle) * pinRadius;
       const py = cy + Math.sin(pAngle) * pinRadius;
 
@@ -123,6 +139,31 @@ export class WheelRenderer {
       ctx.lineWidth = 1.5;
       ctx.strokeStyle = '#475569';
       ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  public draw(canvas: HTMLCanvasElement | null, wheelAngle: number): void {
+    if (!canvas || typeof canvas.getContext !== 'function') return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    if (!this.offscreenCanvas) {
+      this.buildOffscreenCache(w, h);
+    }
+
+    ctx.clearRect(0, 0, w, h);
+
+    if (this.offscreenCanvas) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(wheelAngle);
+      ctx.drawImage(this.offscreenCanvas, -cx, -cy);
       ctx.restore();
     }
   }

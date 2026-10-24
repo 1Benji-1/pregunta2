@@ -804,10 +804,13 @@ h1, h2, h3, h4, .font-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border-radius: 12px;
   background: var(--bg-panel);
   border-left: 6px solid #ccc;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
@@ -820,32 +823,46 @@ h1, h2, h3, h4, .font-display {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .cat-row-icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  padding: 4px;
+  padding: 3px;
   background: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   flex-shrink: 0;
 }
 
+.cat-row-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
 .cat-row-title {
   font-weight: 800;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   color: var(--text-dark);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.2;
 }
 
 .cat-row-Sub {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  margin-top: 1px;
 }
 
 .cat-row-right {
@@ -922,26 +939,31 @@ h1, h2, h3, h4, .font-display {
 .turn-banner {
   background: #fff;
   color: var(--text-dark);
-  padding: 10px 24px;
+  padding: 8px 18px;
   border-radius: var(--radius-pill);
   box-shadow: 0 6px 0 #131e33, 0 10px 20px rgba(0, 0, 0, 0.3);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-family: 'Fredoka', sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  max-width: 95%;
+  word-break: break-word;
+  text-align: center;
 }
 
 .turn-banner-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 /* Contenedor de la Ruleta */
@@ -970,16 +992,22 @@ h1, h2, h3, h4, .font-display {
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
+  transform-origin: 50% 12%;
   z-index: 15;
   width: 46px;
   height: 54px;
   filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.45));
-  transition: transform 0.08s ease;
   pointer-events: none;
 }
 
+@keyframes pointerBounce {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  35% { transform: translateX(-50%) rotate(-16deg) scale(1.06); }
+  100% { transform: translateX(-50%) rotate(0deg); }
+}
+
 .wheel-pointer.tick-bounce {
-  transform: translateX(-50%) rotate(-14deg) scale(1.06);
+  animation: pointerBounce 0.08s ease-out;
 }
 
 /* Botón Central GIRAR con Willy */
@@ -1048,20 +1076,24 @@ h1, h2, h3, h4, .font-display {
 
 /* Banner de Estado / Notificaciones de la Ruleta */
 .wheel-status-box {
-  min-height: 54px;
+  min-height: 52px;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
   background: rgba(15, 23, 42, 0.65);
   border: 2px solid rgba(255, 255, 255, 0.18);
   border-radius: var(--radius-lg);
-  padding: 10px 18px;
+  padding: 10px 16px;
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   gap: 10px;
   font-weight: 800;
-  font-size: 0.96rem;
+  font-size: 0.94rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
 }
 
 .wheel-status-box.respin-alert {
@@ -2423,37 +2455,71 @@ dialog.game-modal[open]::backdrop {
 
   /* Scoreboard en móvil */
   .scoreboard-card {
-    padding: 12px;
+    padding: 10px 12px;
     border-radius: var(--radius-lg);
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
   }
   .player-avatar-badge {
-    width: 40px;
-    height: 40px;
-    font-size: 1.35rem;
-  }
-  .player-name-title {
-    font-size: 1.05rem;
-  }
-  .crown-counter-badge {
-    padding: 4px 10px;
-    font-size: 0.88rem;
-  }
-  .medals-rack {
-    gap: 5px;
-    margin: 10px 0;
-  }
-  .medal-slot {
     width: 38px;
     height: 38px;
-    padding: 3px;
+    font-size: 1.3rem;
+  }
+  .player-name-title {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .crown-counter-badge {
+    padding: 3px 8px;
+    font-size: 0.85rem;
+  }
+  .medals-rack {
+    gap: 4px;
+    margin: 8px 0;
+    padding: 6px 4px;
+  }
+  .medal-slot {
+    width: 34px;
+    height: 34px;
+    padding: 2px;
+  }
+  .comodines-scoreboard-bar {
+    gap: 4px;
+    margin: 8px 0;
+    padding: 4px;
+  }
+  .sb-comodin-item {
+    padding: 3px 6px;
+    font-size: 0.72rem;
   }
   .cat-progress-row {
     padding: 5px 8px;
-    font-size: 0.82rem;
+    gap: 6px;
   }
   .cat-row-icon {
     width: 22px;
     height: 22px;
+    padding: 2px;
+  }
+  .cat-row-title {
+    font-size: 0.78rem;
+  }
+  .cat-row-Sub {
+    font-size: 0.64rem;
+  }
+  .point-dot {
+    width: 14px;
+    height: 14px;
+    font-size: 0.55rem;
+  }
+  .cat-status-tag {
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    min-width: 28px;
   }
 
   /* Modal de Pregunta y Cubierta de Privacidad en Móvil */

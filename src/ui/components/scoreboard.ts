@@ -75,17 +75,17 @@ export class ScoreboardComponent {
           const won = catState ? catState.won : false;
 
           let statusTagHtml = `<span class="cat-status-tag">${pts}/3</span>`;
-          let subText = '0/3 pts · 1 intento en Corona';
+          let subText = '1 intento';
 
           if (won) {
-            statusTagHtml = `<span class="cat-status-tag won-tag">👑 GANADA</span>`;
-            subText = catState && catState.wonByCrown ? 'Conquistada por Corona' : 'Conquistada (3/3 pts)';
+            statusTagHtml = `<span class="cat-status-tag won-tag">👑</span>`;
+            subText = 'Conquistada';
           } else if (pts === 1) {
-            statusTagHtml = `<span class="cat-status-tag bonus-tag">1/3 · Corona x2</span>`;
-            subText = '🎁 Bonus Corona: hasta 2 intentos';
+            statusTagHtml = `<span class="cat-status-tag bonus-tag">1/3</span>`;
+            subText = 'Bonus x2';
           } else if (pts === 2) {
-            statusTagHtml = `<span class="cat-status-tag bonus-tag">2/3 · Corona x3</span>`;
-            subText = '🎁 Bonus Corona: hasta 3 intentos';
+            statusTagHtml = `<span class="cat-status-tag bonus-tag">2/3</span>`;
+            subText = 'Bonus x3';
           }
 
           const dotsHtml = [1, 2, 3]
@@ -101,7 +101,7 @@ export class ScoreboardComponent {
             <div class="cat-progress-row ${won ? 'won-row' : ''}" style="border-left-color: ${cat.color};">
               <div class="cat-row-left">
                 <img class="cat-row-icon" src="${cat.art}" alt="${cat.name}">
-                <div>
+                <div class="cat-row-text">
                   <div class="cat-row-title">${cat.name}</div>
                   <span class="cat-row-Sub">${subText}</span>
                 </div>
