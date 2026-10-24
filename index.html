@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pregunta2 — El Juego de Mesa de Preguntas y Coronas</title>
+  <link rel="icon" type="image/png" href="assets/images/preguntados_logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ====================================================================
+       BARRA SUPERIOR ESTILO PREGUNTADOS
+       ==================================================================== -->
+  <header class="top-navbar">
+    <div class="brand-logo">
+      <img src="assets/images/preguntados_logo.png" alt="Logo pregunta2" />
+      <div class="brand-title" aria-label="pregunta2">
+        <span class="char-p">p</span>
+        <span class="char-r">r</span>
+        <span class="char-e">e</span>
+        <span class="char-g">g</span>
+        <span class="char-u">u</span>
+        <span class="char-n">n</span>
+        <span class="char-t">t</span>
+        <span class="char-a">a</span>
+        <span class="char-2">2</span>
+      </div>
+    </div>
+
+    <div class="nav-pills-info" id="navMatchInfo" style="display: none;">
+      <span class="info-Chip" id="navDifficultyBadge">Dificultad: 🟡 Media</span>
+      <span class="info-Chip">🎲 Modo Juego de Mesa (Sin tiempo)</span>
+      <span class="info-Chip" id="navTurnBadge">Ronda / Turno #1</span>
+      <span class="info-Chip" id="navOnlineBadge" style="display: none; background: #2e7d32; color: #fff; border: 2px solid #81c784;">
+        🌐 Sala: <strong id="navOnlineRoomCode">---</strong> · <span id="navOnlineRole">Tú: J1</span>
+      </span>
+    </div>
+
+    <div class="nav-actions">
+      <button type="button" class="btn-3d btn-3d-blue btn-3d-sm" id="btnToggleSound">
+        🔊 Sonido: ON
+      </button>
+      <button type="button" class="btn-3d btn-3d-purple btn-3d-sm" id="btnOpenRules">
+        📖 Reglas y Bonus
+      </button>
+      <button type="button" class="btn-3d btn-3d-orange btn-3d-sm" id="btnBackLobby" style="display: none;">
+        ⚙️ Lobby
+      </button>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       FASE 1: PANTALLA DE BIENVENIDA Y CONFIGURACIÓN (LOBBY)
+       ==================================================================== -->
+  <main id="lobbyScreen" class="screen-view active">
+    <div class="lobby-container">
+      <div class="lobby-hero">
+        <div class="lobby-hero-characters">
+          <div class="hero-cat-badge" title="Arte y Literatura - Tina">
+            <img src="assets/images/arte.png" alt="Arte" />
+          </div>
+          <div class="hero-cat-badge" title="Geografía - Tito">
+            <img src="assets/images/geografia.png" alt="Geografía" />
+          </div>
+          <div class="hero-cat-badge" title="Ciencias y Tecnología - Albert">
+            <img src="assets/images/ciencia.png" alt="Ciencia" />
+          </div>
+          <div class="hero-cat-badge" title="Willy - Mascota Oficial" style="width: 72px; height: 72px; padding: 4px;">
+            <img src="assets/images/icono_preguntados.png" alt="Willy" />
+          </div>
+          <div class="hero-cat-badge" title="Deportes - Bonzo">
+            <img src="assets/images/deportes.png" alt="Deportes" />
+          </div>
+          <div class="hero-cat-badge" title="Entretenimiento - Pop">
+            <img src="assets/images/entretenimiento.png" alt="Entretenimiento" />
+          </div>
+          <div class="hero-cat-badge" title="Historia - Héctor">
+            <img src="assets/images/historia.png" alt="Historia" />
+          </div>
+        </div>
+        <h1>🎯 ¡Bienvenido a pregunta2! 🎯</h1>
+        <p>
+          Duelo local para <strong>2 jugadores (Hotseat)</strong> inspirado en el clásico Preguntados.
+          Gira a Willy, aprovecha el sistema de Bonus por puntos acumulados y conquista las 6 coronas.
+        </p>
+      </div>
+
+      <div class="lobby-body">
+        <!-- Banner para reanudar partida guardada en localStorage -->
+        <div class="resume-banner" id="resumeBanner" style="display: none;">
+          <div class="resume-banner-info">
+            <span style="font-size: 1.5rem;">💾</span>
+            <span id="resumeSummaryText">Partida guardada disponible</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-3d btn-3d-sm" id="btnResumeMatch">
+              ▶ Reanudar Partida
+            </button>
+            <button type="button" class="btn-3d btn-3d-red btn-3d-sm" id="btnDiscardSaved">
+              🗑️ Descartar
+            </button>
+          </div>
+        </div>
+
+        <!-- Selector de Modo de Juego: Local (Hotseat) vs Online (2 Dispositivos) -->
+        <div class="mode-select-banner">
+          <div class="mode-tabs">
+            <button type="button" class="mode-tab-btn active" id="tabModeLocal">
+              👥 Modo Local (Misma Pantalla)
+            </button>
+            <button type="button" class="mode-tab-btn" id="tabModeOnline">
+              🌐 Modo Online (2 Dispositivos)
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 1: MODO LOCAL -->
+        <div id="localSetupContainer">
+          <!-- Registro de los 2 Jugadores -->
+          <section>
+            <h3 style="margin-bottom: 12px; font-size: 1.2rem;">👥 1. Registro de Jugadores (Modo Local)</h3>
+            <div class="players-setup-grid">
+              <!-- Jugador 1 -->
+              <div class="player-setup-card p1-card">
+                <div class="player-setup-header">
+                  <div class="player-preview-avatar" id="previewAvatarP1">🦊</div>
+                  <div>
+                    <h4 style="font-size: 1.1rem;">Jugador 1</h4>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Abre la partida</span>
+                  </div>
+                </div>
+                <label class="form-label" for="inputNameP1">Nombre del Jugador 1</label>
+                <input type="text" id="inputNameP1" class="text-input" value="Carlos" maxlength="18" placeholder="Ej. Carlos" />
+                <label class="form-label" style="margin-top: 12px;">Elige tu Avatar</label>
+                <div class="avatar-picker" id="avatarPickerP1"></div>
+              </div>
+
+              <!-- Jugador 2 -->
+              <div class="player-setup-card p2-card">
+                <div class="player-setup-header">
+                  <div class="player-preview-avatar" id="previewAvatarP2">🦉</div>
+                  <div>
+                    <h4 style="font-size: 1.1rem;">Jugador 2</h4>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Rival de duelo</span>
+                  </div>
+                </div>
+                <label class="form-label" for="inputNameP2">Nombre del Jugador 2</label>
+                <input type="text" id="inputNameP2" class="text-input" value="Lucía" maxlength="18" placeholder="Ej. Lucía" />
+                <label class="form-label" style="margin-top: 12px;">Elige tu Avatar</label>
+                <div class="avatar-picker" id="avatarPickerP2"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Selector de Dificultad de Preguntas (Local) -->
+          <section class="difficulty-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <h3 style="font-size: 1.2rem;">🎚️ 2. Selector de Dificultad</h3>
+              <span class="info-Chip" style="background: #1e2d4a; color: #ffd54f;">
+                🎲 Juego de Mesa: Sin tiempo · El rival lee la carta y conoce la respuesta
+              </span>
+            </div>
+
+            <div class="difficulty-grid">
+              <button type="button" class="diff-card" data-diff="facil">
+                <div class="diff-card-title">🟢 Fácil</div>
+                <p class="diff-card-desc">Preguntas directas de cultura general, conceptos básicos y menor ambigüedad.</p>
+              </button>
+
+              <button type="button" class="diff-card selected" data-diff="media">
+                <div class="diff-card-title">🟡 Media (Equilibrada)</div>
+                <p class="diff-card-desc">Conocimiento estándar con distractores equilibrados. Ideal para duelos clásicos.</p>
+              </button>
+
+              <button type="button" class="diff-card" data-diff="dificil">
+                <div class="diff-card-title">🔴 Difícil</div>
+                <p class="diff-card-desc">Mayor profundidad técnica, fechas exactas, autores y detalles minuciosos.</p>
+              </button>
+
+              <button type="button" class="diff-card" data-diff="mixta">
+                <div class="diff-card-title">🎲 Mixta / Aleatoria</div>
+                <p class="diff-card-desc">Baraja dinámicamente cartas de los tres niveles de dificultad sin reemplazo.</p>
+              </button>
+            </div>
+          </section>
+
+          <div class="lobby-footer">
+            <button type="button" class="btn-3d btn-start-game" id="btnStartMatch">
+              ▶ INICIAR PARTIDA LOCAL
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: MODO ONLINE (2 DISPOSITIVOS) -->
+        <div id="onlineSetupContainer" style="display: none;">
+          <section>
+            <h3 style="margin-bottom: 12px; font-size: 1.2rem;">🌐 Configuración de Partida Online (2 Dispositivos)</h3>
+            <p style="font-size: 0.95rem; color: var(--text-dark); margin-bottom: 16px;">
+              ¡Juega con un amigo en tiempo real desde dos celulares o computadoras! Uno gira la ruleta y el otro le lee la pregunta desde su propia pantalla.
+            </p>
+
+            <!-- Perfil del Jugador Online -->
+            <div class="player-setup-card online-profile-card">
+              <div class="player-setup-header">
+                <div class="player-preview-avatar" id="previewAvatarOnline">🦊</div>
+                <div>
+                  <h4 style="font-size: 1.1rem;">Tu Perfil</h4>
+                  <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">Así te verá tu rival en su dispositivo</span>
+                </div>
+              </div>
+              <label class="form-label" for="inputNameOnline">Tu Nombre o Apodo</label>
+              <input type="text" id="inputNameOnline" class="text-input" value="Carlos" maxlength="18" placeholder="Tu nombre" />
+              <label class="form-label" style="margin-top: 12px;">Elige tu Avatar</label>
+              <div class="avatar-picker" id="avatarPickerOnline"></div>
+            </div>
+
+            <!-- Opciones de Sala: Crear o Unirse -->
+            <div class="online-actions-grid" id="onlineActionsGrid">
+              <!-- Tarjeta Crear Sala -->
+              <div class="online-action-card">
+                <div class="action-card-badge">Anfitrión (Jugador 1)</div>
+                <h4>✨ Crear Sala Nueva</h4>
+                <p>Genera un código de sala para pasárselo a tu rival y comenzar.</p>
+
+                <div style="margin: 12px 0;">
+                  <label class="form-label" for="selectOnlineDifficulty">Dificultad de Preguntas:</label>
+                  <select id="selectOnlineDifficulty" class="text-input" style="padding: 10px; font-weight: 700; cursor: pointer;">
+                    <option value="facil">🟢 Fácil</option>
+                    <option value="media" selected>🟡 Media (Equilibrada)</option>
+                    <option value="dificil">🔴 Difícil</option>
+                    <option value="mixta">🎲 Mixta / Aleatoria</option>
+                  </select>
+                </div>
+
+                <button type="button" class="btn-3d btn-3d-green" id="btnCreateOnlineRoom" style="width: 100%;">
+                  🟢 CREAR SALA ONLINE
+                </button>
+              </div>
+
+              <!-- Tarjeta Unirse a Sala -->
+              <div class="online-action-card">
+                <div class="action-card-badge">Invitado (Jugador 2)</div>
+                <h4>🔗 Unirse a una Sala</h4>
+                <p>Si tu amigo ya creó la sala, escribe el código de 5 letras para entrar.</p>
+
+                <div style="margin: 12px 0;">
+                  <label class="form-label" for="inputJoinRoomCode">Código de Sala:</label>
+                  <input type="text" id="inputJoinRoomCode" class="text-input" placeholder="Ej. ABC12" maxlength="8" style="text-transform: uppercase; font-size: 1.3rem; letter-spacing: 3px; text-align: center; font-weight: 800;" />
+                </div>
+
+                <button type="button" class="btn-3d btn-3d-blue" id="btnJoinOnlineRoom" style="width: 100%;">
+                  🚀 ENTRAR A LA PARTIDA
+                </button>
+              </div>
+            </div>
+
+            <!-- Sala de Espera del Anfitrión -->
+            <div class="online-waiting-card" id="onlineWaitingCard" style="display: none;">
+              <div class="waiting-spinner">⏳</div>
+              <h3 style="font-size: 1.3rem; margin-bottom: 6px;">¡Sala Creada con Éxito!</h3>
+              <p style="color: var(--text-dark); margin-bottom: 12px;">Comparte este código con tu amigo para que entre desde su celular o computadora:</p>
+              
+              <div class="room-code-display" id="displayRoomCode">-----</div>
+              
+              <div class="waiting-actions-row">
+                <button type="button" class="btn-3d btn-3d-sm btn-3d-purple" id="btnCopyRoomCode">
+                  📋 Copiar Código
+                </button>
+                <button type="button" class="btn-3d btn-3d-sm btn-3d-orange" id="btnCopyRoomLink">
+                  🔗 Copiar Enlace Directo
+                </button>
+                <button type="button" class="btn-3d btn-3d-sm btn-3d-red" id="btnCancelWaitingRoom">
+                  ❌ Cancelar Sala
+                </button>
+              </div>
+
+              <div class="waiting-pulse-status">
+                <span class="pulsing-dot"></span>
+                <span>Esperando a que tu rival se una... En cuanto ingrese el código, ¡la partida arrancará sola!</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ====================================================================
+       FASE 2: PANTALLA PRINCIPAL DE JUEGO (TABLERO + RULETA + ANOTADORES)
+       ==================================================================== -->
+  <main id="boardScreen" class="screen-view">
+    <div class="board-layout">
+
+      <!-- ANOTADOR JUGADOR 1 -->
+      <aside class="scoreboard-card active-turn" id="scoreboardP1">
+        <div class="player-header">
+          <div class="player-identity">
+            <div class="player-avatar-badge" id="sbAvatarP1">🦊</div>
+            <div>
+              <div class="player-name-title" id="sbNameP1">Carlos</div>
+              <span class="turn-pill" id="sbTurnPillP1">⚡ JUGANDO AHORA</span>
+            </div>
+          </div>
+          <div class="crown-counter-badge" title="Coronas Conquistadas">
+            👑 <span id="sbCrownsP1">0 / 6</span>
+          </div>
+        </div>
+
+        <!-- Medallero de 6 Personajes -->
+        <div class="medals-rack" id="sbMedalsP1"></div>
+
+        <!-- Comodines del Jugador 1 (3 de cada tipo por partida) -->
+        <div class="comodines-scoreboard-bar" id="sbComodinesP1"></div>
+
+        <!-- Barra de Puntos por Categoría (0 a 3) -->
+        <div class="category-progress-list" id="sbCatListP1"></div>
+      </aside>
+
+      <!-- CENTRO: LA RULETA INTERACTIVA ESTILO PREGUNTADOS -->
+      <section class="wheel-arena">
+        <div class="turn-banner">
+          <span class="turn-banner-avatar" id="turnBannerAvatar">🦊</span>
+          <span id="turnBannerName">TURNO DE: CARLOS</span>
+        </div>
+
+        <div class="wheel-stage">
+          <!-- Aguja / Puntero Superior -->
+          <svg class="wheel-pointer" id="wheelPointer" viewBox="0 0 60 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M30 66L6 18C2 10 8 2 17 2H43C52 2 58 10 54 18L30 66Z" fill="#FF3D00" stroke="#FFFFFF" stroke-width="4"/>
+            <circle cx="30" cy="18" r="7" fill="#FFD54F"/>
+          </svg>
+
+          <!-- Canvas de la Ruleta de 7 secciones -->
+          <canvas id="wheelCanvas" width="520" height="520"></canvas>
+
+          <!-- Botón central GIRAR con Willy -->
+          <button type="button" class="wheel-spin-btn" id="btnSpinWheel" title="Haz clic para girar la ruleta">
+            <img src="assets/images/preguntados_logo.png" alt="Willy" />
+            <span class="wheel-spin-label">GIRAR</span>
+          </button>
+        </div>
+
+        <!-- Caja de notificaciones de la ruleta (incluye aviso de Opción A: Regiro Automático) -->
+        <div class="wheel-status-box" id="wheelStatusBox">
+          🎯 Pulsa el botón central [GIRAR] para comenzar tu turno.
+        </div>
+
+        <!-- Panel desplegable opcional para probar cualquier casilla en vivo -->
+        <details class="quick-test-details">
+          <summary>🧪 Modo Simulación Rápida (Forzar caída de ruleta para pruebas)</summary>
+          <div class="quick-test-btns" id="quickTestButtons"></div>
+        </details>
+      </section>
+
+      <!-- ANOTADOR JUGADOR 2 -->
+      <aside class="scoreboard-card" id="scoreboardP2">
+        <div class="player-header">
+          <div class="player-identity">
+            <div class="player-avatar-badge" id="sbAvatarP2">🦉</div>
+            <div>
+              <div class="player-name-title" id="sbNameP2">Lucía</div>
+              <span class="turn-pill" id="sbTurnPillP2">EN ESPERA</span>
+            </div>
+          </div>
+          <div class="crown-counter-badge" title="Coronas Conquistadas">
+            👑 <span id="sbCrownsP2">0 / 6</span>
+          </div>
+        </div>
+
+        <!-- Medallero de 6 Personajes -->
+        <div class="medals-rack" id="sbMedalsP2"></div>
+
+        <!-- Comodines del Jugador 2 (3 de cada tipo por partida) -->
+        <div class="comodines-scoreboard-bar" id="sbComodinesP2"></div>
+
+        <!-- Barra de Puntos por Categoría (0 a 3) -->
+        <div class="category-progress-list" id="sbCatListP2"></div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- ====================================================================
+       MODAL DE SELECCIÓN DE CATEGORÍA EN CASILLA CORONA 👑 (Sección 7.B)
+       ==================================================================== -->
+  <dialog class="game-modal" id="crownModal">
+    <div class="crown-modal-header">
+      <div style="font-size: 2.6rem; margin-bottom: 4px;">👑</div>
+      <h2>¡CASILLA DE CORONA!</h2>
+      <p id="crownModalPlayerName" style="margin-top: 6px; font-weight: 700;">
+        Elige la categoría pendiente que deseas disputar en un desafío directo:
+      </p>
+    </div>
+    <div class="crown-cat-grid" id="crownCategoryGrid"></div>
+  </dialog>
+
+  <!-- ====================================================================
+       MODAL DE PREGUNTA ESTILO JUEGO DE MESA (Lector Rival + Sin Tiempo)
+       ==================================================================== -->
+  <dialog class="game-modal" id="questionModal">
+    <div class="question-modal-header" id="qModalHeader">
+      <div class="q-category-hero">
+        <div class="q-cat-art-wrap">
+          <img id="qModalArt" src="assets/images/historia.png" alt="Categoría" />
+        </div>
+        <div class="q-cat-meta">
+          <h2 id="qModalCatTitle">Historia · Héctor</h2>
+          <div class="q-badges-row">
+            <span class="q-meta-pill" id="qModalCardId">Carta: HIST-MED-001</span>
+            <span class="q-meta-pill bonus-pill" id="qModalAttemptBadge">Intento 1 de 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insignia del Lector de la Carta (Juego de Mesa) -->
+      <div class="reader-role-box">
+        <div class="reader-badge-title">📖 LECTOR DE LA CARTA</div>
+        <div class="reader-badge-player" id="qReaderPlayerBadge">Lucía 🦉</div>
+      </div>
+    </div>
+
+    <!-- Cubierta de Privacidad / Pase de Pantalla al Lector -->
+    <div class="privacy-shield-container" id="qPrivacyShield">
+      <div class="privacy-shield-icon">🛡️ 📖</div>
+      <h3 class="privacy-shield-title">¡Pase de pantalla al lector!</h3>
+      <div class="privacy-shield-roles">
+        <div class="privacy-role-chip answering">
+          <span>🎯 Responde:</span>
+          <strong id="privacyResponderName">Carlos 🦊</strong>
+        </div>
+        <span class="privacy-role-arrow">➔</span>
+        <div class="privacy-role-chip reading">
+          <span>📖 Lee la carta:</span>
+          <strong id="privacyReaderName">Lucía 🦉</strong>
+        </div>
+      </div>
+      <p class="privacy-shield-warning">
+        ⚠️ <strong><span id="privacyWarnResponder">Carlos</span></strong> no debe mirar la pantalla para no ver la respuesta.<br>
+        Entrega la pantalla a <strong><span id="privacyWarnReader">Lucía</span></strong> para leer la tarjeta.
+      </p>
+      <button type="button" class="btn-3d btn-3d-orange btn-privacy-reveal" id="btnRevealCardToReader">
+        👁️ MOSTRAR PREGUNTA Y RESPUESTA (Solo Lector)
+      </button>
+    </div>
+
+    <!-- Contenido Interactivo de la Pregunta (Visible solo tras pulsar el botón del lector) -->
+    <div id="qCardInteractiveContent" style="display: none;">
+      <!-- Barra de Instrucción para el Lector Rival -->
+      <div class="reader-instruction-bar" id="qReaderInstructionBar">
+        📢 <strong><span id="qReaderNameSpan">Lucía</span></strong>, lee la pregunta y las 4 opciones en voz alta para <strong><span id="qResponderNameSpan">Carlos</span></strong>.<br>
+        La respuesta correcta está marcada para ti. Cuando tu rival responda, haz clic en la opción elegida.
+      </div>
+
+      <div class="question-modal-body">
+        <div class="bonus-explainer-banner" id="qBonusExplainer" style="display: none;"></div>
+
+        <!-- Barra de Comodines del Jugador en Turno (3 usos por partida) -->
+        <div class="comodines-action-bar" id="qComodinesBar">
+          <div class="comodines-bar-header">
+            <span class="comodines-bar-label">🎴 Comodines de <strong id="qComodinesPlayerName">Carlos</strong></span>
+            <span class="comodines-bar-sub">(3 de c/u por partida)</span>
+          </div>
+          <div class="comodines-buttons-row">
+            <button type="button" class="btn-comodin" id="btnComodinDoble" title="Permite elegir hasta dos respuestas en esta pregunta. Si fallas la primera, puedes elegir otra.">
+              <span class="comodin-btn-icon">✌️</span>
+              <span class="comodin-btn-info">
+                <span class="comodin-btn-title">Doble Oportunidad</span>
+                <span class="comodin-btn-desc">Hasta 2 respuestas</span>
+              </span>
+              <span class="comodin-btn-badge" id="qCountDoble">3/3</span>
+            </button>
+            <button type="button" class="btn-comodin" id="btnComodinBomba" title="Descarta 2 opciones incorrectas, dejando solo 1 correcta y 1 incorrecta.">
+              <span class="comodin-btn-icon">💣</span>
+              <span class="comodin-btn-info">
+                <span class="comodin-btn-title">Bomba 50:50</span>
+                <span class="comodin-btn-desc">Descarta 2 malas</span>
+              </span>
+              <span class="comodin-btn-badge" id="qCountBomba">3/3</span>
+            </button>
+          </div>
+          <div class="comodin-status-msg" id="qComodinStatusMsg" style="display: none;"></div>
+        </div>
+
+        <div class="question-card-box">
+          <div class="question-turn-tag" id="qTurnPlayerTag">🎯 Responde: Carlos 🦊 — Pregunta #1</div>
+          <p class="question-statement" id="qStatementText">
+            ¿En qué año cayó el Muro de Berlín, marcando un hito en el fin de la Guerra Fría?
+          </p>
+        </div>
+
+        <div class="options-list" id="qOptionsList"></div>
+
+        <!-- Panel de resultado y botón de siguiente intento de Bonus o cambio de turno -->
+        <div class="feedback-panel" id="qFeedbackPanel"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ====================================================================
+       MODAL DE VICTORIA Y ESTADÍSTICAS FINALES (Sección 9)
+       ==================================================================== -->
+  <dialog class="game-modal" id="victoryModal">
+    <div class="victory-header">
+      <img class="victory-trophy-img" src="assets/images/cup.png" alt="Trofeo Campeón" />
+      <h2 id="victoryTitle" style="font-size: 1.85rem; text-shadow: 0 3px 0 rgba(0,0,0,0.3);">
+        🎉 ¡CARLOS ES EL CAMPEÓN! 🎉
+      </h2>
+      <p id="victorySubtitle" style="margin-top: 4px; font-weight: 800;">
+        ¡Ha completado las 6 categorías de pregunta2!
+      </p>
+    </div>
+
+    <div class="victory-body">
+      <p id="victoryTotalTime" style="text-align: center; font-weight: 800; color: var(--text-dark);"></p>
+      <div class="stats-summary-grid" id="victoryStatsGrid"></div>
+
+      <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; margin-top: 8px;">
+        <button type="button" class="btn-3d" id="btnRematch">
+          🔄 JUGAR OTRA PARTIDA (REVANCHA)
+        </button>
+        <button type="button" class="btn-3d btn-3d-blue" id="btnVictoryLobby">
+          ⚙️ VOLVER AL LOBBY
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ====================================================================
+       MODAL DE REGLAS OFICIALES Y TABLA DE BONUS
+       ==================================================================== -->
+  <dialog class="game-modal" id="rulesModal">
+    <div class="crown-modal-header" style="background: linear-gradient(135deg, #1e88e5, #1565c0);">
+      <h2>📖 Reglas Oficiales de pregunta2</h2>
+      <p style="margin-top: 4px;">Resumen del sistema de juego, Corona y Bonus por puntos acumulados</p>
+    </div>
+    <div class="victory-body" style="line-height: 1.5; font-size: 0.93rem;">
+      <div class="stat-box">
+        <h4>🎯 Objetivo del Juego</h4>
+        <p>Ser el primer jugador en conquistar las <strong>6 categorías oficiales</strong> (Arte y Literatura, Geografía, Ciencias y Tecnología, Deportes, Entretenimiento e Historia), ya sea acumulando <strong>3 puntos</strong> en cada una o mediante la casilla de <strong>Corona 👑</strong>.</p>
+      </div>
+
+      <div class="stat-box">
+        <h4>🎡 Dinámica de Turnos y Regla de Bonus</h4>
+        <ul class="stat-list" style="color: var(--text-dark);">
+          <li>• <strong>Dinámica de Juego de Mesa:</strong> El rival actúa como lector: lee la pregunta en voz alta con la respuesta correcta visible en su pantalla.</li>
+          <li>• <strong>Turno Normal de Categoría:</strong> Dispones de <strong>1 único intento</strong>. Si aciertas, sumas <strong>+1 punto</strong> (al llegar a 3/3 puntos conquistas la categoría). Si fallas, termina tu turno sin bonus.</li>
+          <li>• <strong>Casilla de Corona 👑 (¡Bonus Activo!):</strong> Eliges qué categoría disputar directamente. <strong>Tus puntos acumulados en esa categoría se convierten en oportunidades de Bonus:</strong>
+            <ul style="margin: 4px 0 0 16px; list-style: disc;">
+              <li><strong>0 Puntos previos:</strong> 1 intento (Pregunta 1 de la carta).</li>
+              <li><strong>1 Punto previo:</strong> ¡Bonus Activo! Hasta 2 intentos (Preguntas 1 y 2).</li>
+              <li><strong>2 Puntos previos:</strong> ¡Bonus Activo! Hasta 3 intentos (Preguntas 1, 2 y 3).</li>
+            </ul>
+          </li>
+          <li>• <strong>Conquista por Corona:</strong> Al acertar en cualquiera de tus intentos de bonus, ¡ganas la Corona de esa categoría directamente!</li>
+        </ul>
+      </div>
+
+      <div class="stat-box">
+        <h4>🔄 Regla de Regiro Automático (Opción A)</h4>
+        <p style="color: var(--text-dark); margin: 0;">Si la ruleta cae en una categoría que ya conquistaste, vuelve a girar automáticamente sin penalización hasta caer en una pendiente o en la Corona.</p>
+      </div>
+
+      <div class="stat-box">
+        <h4>🎴 Comodines de Ayuda (3 por partida de cada tipo)</h4>
+        <p style="color: var(--text-dark); margin-bottom: 6px;">Cada jugador dispone de dos comodines estratégicos para toda la partida (3 usos cada uno):</p>
+        <ul class="stat-list" style="color: var(--text-dark);">
+          <li>• <strong>✌️ Doble Oportunidad:</strong> Te permite seleccionar hasta dos respuestas en la misma pregunta. Si fallas la primera opción, no pierdes el turno y puedes elegir otra. Si aciertas en la segunda, sumas normalmente. Se descuenta de tu contador al activarlo.</li>
+          <li>• <strong>💣 Bomba 50:50:</strong> Detona y descarta 2 opciones incorrectas al azar, dejando solo la correcta y una falsa. Se descuenta de tu contador al utilizarlo.</li>
+        </ul>
+      </div>
+
+      <div style="text-align: center;">
+        <button type="button" class="btn-3d btn-3d-blue" id="btnCloseRules">
+          👍 ¡Entendido!
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Firebase SDKs (Compat para navegación web estándar y Vercel sin empaquetadores) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+  <script src="js/questions-data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
