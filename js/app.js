@@ -119,9 +119,11 @@ class Pregunta2Game {
     // Estado de la ruleta en Canvas
     this.wheelAngle = 0;
     this.isSpinning = false;
+    this.hasSpunThisTurn = false;
 
     // Estado del turno de pregunta actual
     this.activeTurnContext = null;
+    this.turnCountdownInterval = null;
 
     // Estado Multijugador Online (Firebase Realtime)
     this.isOnline = false;
@@ -130,6 +132,38 @@ class Pregunta2Game {
     this.onlineMatchStarted = false;
 
     this.init();
+  }
+
+  /**
+   * Sanitiza y asegura que las estructuras del estado existan (incluso si Firebase RTDB eliminó arrays vacíos)
+   */
+  sanitizeGameState(state) {
+    if (!state) return state;
+    if (!state.discardPile || !Array.isArray(state.discardPile)) {
+      state.discardPile = [];
+    }
+    if (!state.decks || typeof state.decks !== 'object') {
+      state.decks = {};
+    }
+    CATEGORIES.forEach((cat) => {
+      if (!state.decks[cat.key] || !Array.isArray(state.decks[cat.key])) {
+        state.decks[cat.key] = [];
+      }
+    });
+    if (state.players && Array.isArray(state.players)) {
+      state.players.forEach((p) => {
+        if (!p.categories || typeof p.categories !== 'object') p.categories = {};
+        CATEGORIES.forEach((cat) => {
+          if (!p.categories[cat.key]) {
+            p.categories[cat.key] = { points: 0, won: false, wonByCrown: false, correctCount: 0, attemptCount: 0 };
+          }
+        });
+        if (!p.comodines) {
+          p.comodines = { dobleOportunidad: 3, bomba: 3 };
+        }
+      });
+    }
+    return state;
   }
 
   async init() {
@@ -230,7 +264,10 @@ class Pregunta2Game {
   }
 
   drawCardForCategory(categoryKey) {
-    if (!this.state.decks[categoryKey] || this.state.decks[categoryKey].length === 0) {
+    if (!this.state) return null;
+    this.sanitizeGameState(this.state);
+
+    if (!Array.isArray(this.state.decks[categoryKey]) || this.state.decks[categoryKey].length === 0) {
       // Ciclo de rebarajado seguro (Sección 4.1.4)
       let pool = this.allCards.filter((c) => c.categoria === categoryKey);
       if (this.state.difficulty !== 'mixta') {
@@ -240,11 +277,13 @@ class Pregunta2Game {
     }
 
     const cartaId = this.state.decks[categoryKey].shift();
-    this.state.discardPile.push(cartaId);
-    this.markCardAsUsed(cartaId);
+    if (cartaId) {
+      this.state.discardPile.push(cartaId);
+      this.markCardAsUsed(cartaId);
+    }
 
     const cardObj = this.allCards.find((c) => c.carta_id === cartaId);
-    return cardObj;
+    return cardObj || this.allCards.find((c) => c.categoria === categoryKey) || this.allCards[0];
   }
 
   /* ========================================================================
@@ -515,9 +554,13 @@ class Pregunta2Game {
       // Escuchar eventos y comenzar
       window.multiplayerManager.listenToRoom({
         onStateUpdate: (savedState) => {
-          if (!this.state && savedState) {
-            this.state = savedState;
+          if (!savedState) return;
+          const wasNull = !this.state;
+          this.state = this.sanitizeGameState(savedState);
+          if (wasNull) {
             this.showScreen('boardScreen');
+          }
+          if (!this.activeTurnContext) {
             this.renderBoard();
           }
         },
@@ -525,7 +568,7 @@ class Pregunta2Game {
       });
 
       if (roomData.gameState) {
-        this.state = roomData.gameState;
+        this.state = this.sanitizeGameState(roomData.gameState);
         this.showScreen('boardScreen');
         this.renderBoard();
       } else {
@@ -542,12 +585,14 @@ class Pregunta2Game {
   startOnlineMatchAsHost(hostProfile, guestProfile, difficulty) {
     if (this.onlineMatchStarted) return;
     this.onlineMatchStarted = true;
+    this.hasSpunThisTurn = false;
+    this.clearTurnResultTimer();
 
     // Ocultar tarjeta de sala de espera
     const waitingCard = document.getElementById('onlineWaitingCard');
     if (waitingCard) waitingCard.style.display = 'none';
 
-    this.state = {
+    this.state = this.sanitizeGameState({
       difficulty: difficulty,
       currentPlayerIndex: 0,
       turnNumber: 1,
@@ -561,7 +606,7 @@ class Pregunta2Game {
         this.createEmptyPlayer(hostProfile.name, { emoji: hostProfile.avatar, bg: hostProfile.color }),
         this.createEmptyPlayer(guestProfile.name, { emoji: guestProfile.avatar, bg: guestProfile.color })
       ]
-    };
+    });
 
     // Cambiar vista al tablero de juego y renderizar
     this.showScreen('boardScreen');
@@ -577,6 +622,7 @@ class Pregunta2Game {
 
     switch (action.type) {
       case 'SPIN':
+        this.hasSpunThisTurn = true;
         this.spinWheel(action.payload.targetSliceIdx, action.payload.isAutoRespin, true);
         break;
 
@@ -605,7 +651,11 @@ class Pregunta2Game {
         break;
 
       case 'NEXT_TURN':
-        this.advanceToNextTurn(true);
+        this.advanceToNextTurn(
+          action.payload ? action.payload.nextPlayerIndex : null,
+          action.payload ? action.payload.nextTurnNumber : null,
+          true
+        );
         break;
 
       case 'NEXT_BONUS':
@@ -654,8 +704,14 @@ class Pregunta2Game {
   }
 
   advanceToNextBonusAttempt(fromRemote = false) {
+    this.clearTurnResultTimer();
     const ctx = this.activeTurnContext;
     if (!ctx) return;
+    if (this.isOnline && !fromRemote) {
+      window.multiplayerManager.sendAction('NEXT_BONUS', {
+        nextAttemptIndex: ctx.currentAttemptIndex + 1
+      });
+    }
     ctx.currentAttemptIndex += 1;
     ctx.answered = false;
     ctx.failedOptions = null;
@@ -736,10 +792,12 @@ class Pregunta2Game {
   }
 
   startNewMatch() {
+    this.hasSpunThisTurn = false;
+    this.clearTurnResultTimer();
     const p1Name = document.getElementById('inputNameP1').value.trim() || 'Carlos';
     const p2Name = document.getElementById('inputNameP2').value.trim() || 'Lucía';
 
-    this.state = {
+    this.state = this.sanitizeGameState({
       difficulty: this.selectedDifficulty,
       currentPlayerIndex: 0,
       turnNumber: 1,
@@ -753,7 +811,7 @@ class Pregunta2Game {
         this.createEmptyPlayer(p1Name, AVATARS[this.selectedAvatars[0]]),
         this.createEmptyPlayer(p2Name, AVATARS[this.selectedAvatars[1]])
       ]
-    };
+    });
 
     this.saveMatchState();
     this.showScreen('boardScreen');
@@ -974,16 +1032,19 @@ class Pregunta2Game {
     turnAvatar.textContent = activePlayer.avatar;
     turnAvatar.style.background = activePlayer.color;
 
+    const shouldDisableSpin = this.isSpinning || this.hasSpunThisTurn || !!this.activeTurnContext;
+
     if (this.isOnline) {
       if (this.isMyTurn()) {
         document.getElementById('turnBannerName').textContent = `¡ES TU TURNO, ${activePlayer.name.toUpperCase()}!`;
-        if (spinBtn) spinBtn.disabled = this.isSpinning;
+        if (spinBtn) spinBtn.disabled = shouldDisableSpin;
       } else {
         document.getElementById('turnBannerName').textContent = `TURNO DE: ${activePlayer.name.toUpperCase()} (Esperando su tirada...)`;
         if (spinBtn) spinBtn.disabled = true;
       }
     } else {
       document.getElementById('turnBannerName').textContent = `TURNO DE: ${activePlayer.name.toUpperCase()}`;
+      if (spinBtn) spinBtn.disabled = shouldDisableSpin;
     }
 
     // Renderizar ambos Scoreboards laterales
@@ -1216,8 +1277,13 @@ class Pregunta2Game {
 
   spinWheel(forcedSliceIndex = null, isAutoRespin = false, fromRemote = false) {
     if (this.isSpinning || !this.state || this.state.finished) return;
+    if (this.hasSpunThisTurn && !isAutoRespin) return;
+    if (this.activeTurnContext) return;
     if (this.isOnline && !fromRemote && !this.isMyTurn()) return;
 
+    if (!isAutoRespin) {
+      this.hasSpunThisTurn = true;
+    }
     this.isSpinning = true;
     const spinBtn = document.getElementById('btnSpinWheel');
     if (spinBtn) spinBtn.disabled = true;
@@ -1295,7 +1361,7 @@ class Pregunta2Game {
         requestAnimationFrame(animateSpin);
       } else {
         this.isSpinning = false;
-        if (spinBtn) spinBtn.disabled = this.isOnline && !this.isMyTurn();
+        if (spinBtn) spinBtn.disabled = true;
         const landedSlice = WHEEL_SLICES[targetSliceIdx];
         this.onWheelStopped(landedSlice);
       }
@@ -1412,6 +1478,7 @@ class Pregunta2Game {
      TURNOS DE PREGUNTA Y REGLA DE BONUS (MODALIDAD JUEGO DE MESA)
      ======================================================================== */
   startCategoryTurn(categoryObj, isCrownChallenge = false, providedCard = null) {
+    this.sanitizeGameState(this.state);
     const activePlayer = this.getActivePlayer();
     const readerPlayer = this.state.players[(this.state.currentPlayerIndex + 1) % 2];
     const catState = activePlayer.categories[categoryObj.key];
@@ -1426,7 +1493,7 @@ class Pregunta2Game {
     }
 
     // El Bonus por puntos acumulados solo funciona en el Desafío de Corona. En categoría normal es siempre 1 intento.
-    const maxAttempts = isCrownChallenge ? Math.min(3, catState.points + 1) : 1;
+    const maxAttempts = isCrownChallenge ? Math.min(3, (catState ? catState.points : 0) + 1) : 1;
 
     this.activeTurnContext = {
       category: categoryObj,
@@ -1584,6 +1651,7 @@ class Pregunta2Game {
   }
 
   renderQuestionAttempt() {
+    this.clearTurnResultTimer();
     const ctx = this.activeTurnContext;
     if (!ctx) return;
 
@@ -1660,6 +1728,7 @@ class Pregunta2Game {
 
         const instructEl = document.getElementById('qReaderInstructionBar');
         if (instructEl) {
+          instructEl.style.background = '#1e293b';
           instructEl.innerHTML = `
             📢 <strong>${readerPlayer.name}</strong>, lee en voz alta para <strong>${activePlayer.name}</strong>.<br>
             La respuesta correcta está marcada en verde para ti. Cuando tu rival te diga su respuesta, haz clic en la opción elegida.
@@ -1769,14 +1838,20 @@ class Pregunta2Game {
     if (!ctx || ctx.answered) return;
 
     // Destapar y mostrar la tarjeta completa con la pregunta y respuestas en ambas pantallas
-    document.getElementById('qPrivacyShield').style.display = 'none';
-    document.getElementById('qCardInteractiveContent').style.display = 'block';
+    const shieldEl = document.getElementById('qPrivacyShield');
+    const contentEl = document.getElementById('qCardInteractiveContent');
+    if (shieldEl) shieldEl.style.display = 'none';
+    if (contentEl) contentEl.style.display = 'block';
+
+    const qModal = document.getElementById('questionModal');
+    if (qModal) qModal.scrollTop = 0;
 
     // Si la opción fue descartada por Bomba o ya falló en el primer intento, ignorar clic
     if (ctx.eliminatedOptions && ctx.eliminatedOptions.has(selectedIndex)) return;
     if (ctx.failedOptions && ctx.failedOptions.has(selectedIndex)) return;
 
     const activePlayer = this.getActivePlayer();
+    const readerPlayer = ctx.readerPlayer;
     const cat = ctx.category;
     const catState = activePlayer.categories[cat.key];
     const questionObj = ctx.card.preguntas[ctx.currentAttemptIndex] || ctx.card.preguntas[0];
@@ -1817,22 +1892,60 @@ class Pregunta2Game {
     ctx.answered = true;
     this.updateComodinesUI();
 
+    // Actualizar barra de instrucción para indicar quién marcó la respuesta y el resultado
+    const letters = ['A', 'B', 'C', 'D'];
+    const instructEl = document.getElementById('qReaderInstructionBar');
+    if (instructEl) {
+      const whoMarked = this.isOnline
+        ? (this.isMyTurn() ? `${readerPlayer.name} marcó por ti` : `Marcaste por ${activePlayer.name}`)
+        : `${readerPlayer.name} registró la respuesta de ${activePlayer.name}`;
+      instructEl.innerHTML = `
+        🔔 <strong>${whoMarked}</strong>: Opción <strong>${letters[selectedIndex]}</strong> · ${isCorrect ? '✅ ¡CORRECTA!' : '❌ INCORRECTA'}
+      `;
+      instructEl.style.background = isCorrect ? '#065f46' : '#991b1b';
+    }
+
     // Estadísticas del jugador
     activePlayer.totalQuestions += 1;
     catState.attemptCount += 1;
 
-    // Marcar visualmente los botones de opción tras responder
+    // Resaltar visualmente las opciones con indicación clara de la respuesta marcada
     const optionButtons = document.querySelectorAll('#qOptionsList .option-btn');
     optionButtons.forEach((btn, idx) => {
       btn.disabled = true;
-      if (idx === correctIndex) {
+      btn.classList.remove('has-correct-indicator');
+      const oldBadges = btn.querySelectorAll('.reader-correct-indicator, .answer-selected-badge, .answer-correct-badge');
+      oldBadges.forEach((b) => b.remove());
+
+      if (idx === selectedIndex) {
+        if (isCorrect) {
+          btn.classList.add('correct');
+          const badge = document.createElement('span');
+          badge.className = 'answer-selected-badge correct-badge';
+          badge.textContent = this.isOnline && this.isMyTurn()
+            ? '👉 MARCADA POR TU RIVAL (¡ACIERTO!)'
+            : '👉 RESPUESTA MARCADA (¡ACIERTO!)';
+          btn.appendChild(badge);
+        } else {
+          btn.classList.add('wrong');
+          const badge = document.createElement('span');
+          badge.className = 'answer-selected-badge wrong-badge';
+          badge.textContent = this.isOnline && this.isMyTurn()
+            ? '👉 MARCADA POR TU RIVAL (FALLADA)'
+            : '👉 RESPUESTA MARCADA (FALLADA)';
+          btn.appendChild(badge);
+        }
+      } else if (idx === correctIndex && !isCorrect) {
         btn.classList.add('correct');
-      } else if (idx === selectedIndex && !isCorrect) {
-        btn.classList.add('wrong');
+        const badge = document.createElement('span');
+        badge.className = 'answer-correct-badge';
+        badge.textContent = '✓ RESPUESTA CORRECTA';
+        btn.appendChild(badge);
       }
     });
 
     const fb = document.getElementById('qFeedbackPanel');
+    const hasBonusRemaining = ctx.isCrownChallenge && ctx.currentAttemptIndex + 1 < ctx.maxAttempts;
 
     if (isCorrect) {
       activePlayer.totalCorrect += 1;
@@ -1877,6 +1990,7 @@ class Pregunta2Game {
 
       // Verificar condición de victoria (6 coronas)
       if (activePlayer.crowns >= 6) {
+        this.clearTurnResultTimer();
         this.state.finished = true;
         this.state.winnerIndex = this.state.currentPlayerIndex;
         this.saveMatchState();
@@ -1890,37 +2004,37 @@ class Pregunta2Game {
           </button>
         `;
         document.getElementById('btnShowVictoryScreen').addEventListener('click', () => {
+          this.clearTurnResultTimer();
           document.getElementById('questionModal').close();
           this.openVictoryModal();
         });
-        this.focusAndScrollFeedback();
         return;
       }
 
-      const nextPlayer = this.state.players[(this.state.currentPlayerIndex + 1) % 2];
       fb.className = 'feedback-panel visible success';
       fb.innerHTML = `
         <div class="feedback-title">${feedbackHeadline}</div>
         <p>${feedbackDetail}</p>
         <button type="button" class="btn-3d btn-3d-blue" id="btnFinishTurnSuccess">
-          ➡️ PASAR TURNO A ${nextPlayer.name.toUpperCase()} ${nextPlayer.avatar}
+          ➡️ CONTINUAR AHORA (5s)
         </button>
       `;
       document.getElementById('btnFinishTurnSuccess').addEventListener('click', () => {
         window.soundEngine.playClick();
-        if (this.isOnline) {
-          window.multiplayerManager.sendAction('NEXT_TURN');
-        }
+        this.clearTurnResultTimer();
         this.advanceToNextTurn();
       });
-      this.focusAndScrollFeedback();
+
+      this.startTurnResultCountdown(5, () => {
+        this.advanceToNextTurn();
+      });
     } else {
       // Falló la pregunta
       window.soundEngine.playWrong();
       const correctText = questionObj.opciones[correctIndex];
 
       // ¿Tiene más intentos por Regla de Bonus? (Solo aplica en Desafío de Corona)
-      if (ctx.isCrownChallenge && ctx.currentAttemptIndex + 1 < ctx.maxAttempts) {
+      if (hasBonusRemaining) {
         const nextAttemptNum = ctx.currentAttemptIndex + 2;
         fb.className = 'feedback-panel visible error';
         fb.innerHTML = `
@@ -1930,22 +2044,21 @@ class Pregunta2Game {
           <p>La respuesta correcta era: <strong>${correctText}</strong>.<br>
              ¡Pero tus <strong>${catState.points}/3 PUNTOS PREVIOS</strong> activan tu <strong>BONUS DE CORONA</strong>! Dispones de una <strong>OPORTUNIDAD #${nextAttemptNum}</strong> con la siguiente pregunta de la carta.</p>
           <button type="button" class="btn-3d btn-3d-orange" id="btnNextBonusAttempt">
-            🎁 LEER SIGUIENTE PREGUNTA DE BONUS (${nextAttemptNum} de ${ctx.maxAttempts})
+            🎁 CONTINUAR AL BONUS #${nextAttemptNum} (5s)
           </button>
         `;
         document.getElementById('btnNextBonusAttempt').addEventListener('click', () => {
           window.soundEngine.playClick();
-          if (this.isOnline) {
-            window.multiplayerManager.sendAction('NEXT_BONUS');
-          }
-          ctx.currentAttemptIndex += 1;
-          this.renderQuestionAttempt();
+          this.clearTurnResultTimer();
+          this.advanceToNextBonusAttempt();
         });
-        this.focusAndScrollFeedback();
+
+        this.startTurnResultCountdown(5, () => {
+          this.advanceToNextBonusAttempt();
+        });
       } else {
         // Sin más intentos (o categoría normal): termina el turno con 0 puntos sumados
         this.saveMatchState();
-        const nextPlayer = this.state.players[(this.state.currentPlayerIndex + 1) % 2];
         fb.className = 'feedback-panel visible error';
         fb.innerHTML = `
           <div class="feedback-title">
@@ -1958,55 +2071,122 @@ class Pregunta2Game {
                  : `No sumas puntos en este turno (mantienes ${catState.points}/3 en ${cat.name}).`
              }</p>
           <button type="button" class="btn-3d btn-3d-blue" id="btnFinishTurnFail">
-            ➡️ PASAR TURNO A ${nextPlayer.name.toUpperCase()} ${nextPlayer.avatar}
+            ➡️ CONTINUAR AHORA (5s)
           </button>
         `;
         document.getElementById('btnFinishTurnFail').addEventListener('click', () => {
           window.soundEngine.playClick();
-          if (this.isOnline) {
-            window.multiplayerManager.sendAction('NEXT_TURN');
-          }
+          this.clearTurnResultTimer();
           this.advanceToNextTurn();
         });
-        this.focusAndScrollFeedback();
+
+        this.startTurnResultCountdown(5, () => {
+          this.advanceToNextTurn();
+        });
       }
     }
   }
 
-  /* Asegura visibilidad inmediata del botón de acción y foco accesible */
-  focusAndScrollFeedback() {
-    if (typeof requestAnimationFrame !== 'function') return;
-    requestAnimationFrame(() => {
-      const fb = document.getElementById('qFeedbackPanel');
-      const actionBtn =
-        document.getElementById('btnFinishTurnSuccess') ||
-        document.getElementById('btnFinishTurnFail') ||
-        document.getElementById('btnNextBonusAttempt') ||
-        document.getElementById('btnShowVictoryScreen');
+  /* Temporizador regresivo de 5 segundos tras responder */
+  startTurnResultCountdown(seconds = 5, onFinish) {
+    this.clearTurnResultTimer();
 
+    let remaining = seconds;
+    const fb = document.getElementById('qFeedbackPanel');
+    if (!fb) return;
+
+    let countdownEl = document.getElementById('turnCountdownBox');
+    if (!countdownEl) {
+      countdownEl = document.createElement('div');
+      countdownEl.id = 'turnCountdownBox';
+      countdownEl.className = 'turn-countdown-box';
+      fb.appendChild(countdownEl);
+    }
+
+    const actionBtn =
+      document.getElementById('btnFinishTurnSuccess') ||
+      document.getElementById('btnFinishTurnFail') ||
+      document.getElementById('btnNextBonusAttempt');
+
+    const updateUI = () => {
+      const pct = (remaining / seconds) * 100;
+      countdownEl.innerHTML = `
+        <div class="turn-countdown-text">
+          <span>⏱️ Esta tarjeta se cerrará en <strong id="countdownSecVal">${remaining}s</strong>...</span>
+        </div>
+        <div class="turn-countdown-bar-wrap">
+          <div class="turn-countdown-bar-fill" style="width: ${pct}%;"></div>
+        </div>
+      `;
       if (actionBtn) {
-        actionBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        try {
-          actionBtn.focus({ preventScroll: true });
-        } catch (_) {
-          actionBtn.focus();
-        }
-      } else if (fb) {
-        fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const baseLabel = actionBtn.id === 'btnNextBonusAttempt' ? '🎁 CONTINUAR AL BONUS' : '➡️ CONTINUAR AHORA';
+        actionBtn.textContent = `${baseLabel} (${remaining}s)`;
       }
-    });
+    };
+
+    updateUI();
+
+    this.turnCountdownInterval = setInterval(() => {
+      remaining -= 1;
+      if (remaining > 0) {
+        updateUI();
+      } else {
+        this.clearTurnResultTimer();
+        if (typeof onFinish === 'function') {
+          onFinish();
+        }
+      }
+    }, 1000);
   }
 
-  advanceToNextTurn(fromRemote = false) {
-    const qModal = document.getElementById('questionModal');
-    if (qModal.open) qModal.close();
-
-    this.state.currentPlayerIndex = (this.state.currentPlayerIndex + 1) % 2;
-    this.state.turnNumber += 1;
-    this.saveMatchState();
-    if (this.isOnline && this.myPlayerIndex === 0) {
-      window.multiplayerManager.syncGameState(this.state);
+  clearTurnResultTimer() {
+    if (this.turnCountdownInterval) {
+      clearInterval(this.turnCountdownInterval);
+      this.turnCountdownInterval = null;
     }
+    const countdownEl = document.getElementById('turnCountdownBox');
+    if (countdownEl) {
+      countdownEl.remove();
+    }
+  }
+
+  advanceToNextTurn(targetPlayerIndex = null, targetTurnNumber = null, fromRemote = false) {
+    this.clearTurnResultTimer();
+
+    const qModal = document.getElementById('questionModal');
+    if (qModal && qModal.open) qModal.close();
+
+    const nextTurnNumber = typeof targetTurnNumber === 'number'
+      ? targetTurnNumber
+      : this.state.turnNumber + 1;
+
+    const nextPlayerIndex = typeof targetPlayerIndex === 'number'
+      ? targetPlayerIndex
+      : (this.state.currentPlayerIndex + 1) % 2;
+
+    // Si ya estamos en ese turno o más avanzado en este cliente, ignorar llamada duplicada
+    if (fromRemote && this.state.turnNumber >= nextTurnNumber && this.state.currentPlayerIndex === nextPlayerIndex) {
+      return;
+    }
+
+    this.state.turnNumber = nextTurnNumber;
+    this.state.currentPlayerIndex = nextPlayerIndex;
+    this.hasSpunThisTurn = false;
+    this.activeTurnContext = null;
+
+    this.saveMatchState();
+    if (this.isOnline) {
+      if (!fromRemote) {
+        window.multiplayerManager.sendAction('NEXT_TURN', {
+          nextPlayerIndex: this.state.currentPlayerIndex,
+          nextTurnNumber: this.state.turnNumber
+        });
+      }
+      if (this.myPlayerIndex === 0) {
+        window.multiplayerManager.syncGameState(this.state);
+      }
+    }
+
     this.renderBoard();
 
     const activePlayer = this.getActivePlayer();
@@ -2026,14 +2206,16 @@ class Pregunta2Game {
       );
     }
 
-    // Foco automático en el botón de girar ruleta para agilizar el siguiente turno
     const spinBtn = document.getElementById('btnSpinWheel');
-    if (spinBtn && !spinBtn.disabled) {
-      setTimeout(() => {
-        try {
-          spinBtn.focus();
-        } catch (_) {}
-      }, 80);
+    if (spinBtn) {
+      spinBtn.disabled = this.isOnline && !this.isMyTurn();
+      if (!spinBtn.disabled) {
+        setTimeout(() => {
+          try {
+            spinBtn.focus();
+          } catch (_) {}
+        }, 80);
+      }
     }
   }
 
