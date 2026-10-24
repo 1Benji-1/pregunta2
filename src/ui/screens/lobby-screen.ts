@@ -58,7 +58,7 @@ export class LobbyScreen {
   }
 
   private setupDifficultyButtons(): void {
-    const diffButtons = document.querySelectorAll<HTMLButtonElement>('.diff-choice-btn');
+    const diffButtons = document.querySelectorAll<HTMLButtonElement>('.diff-card');
     diffButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         soundEngine.playClick();

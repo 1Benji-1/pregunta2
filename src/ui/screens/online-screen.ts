@@ -85,7 +85,7 @@ export class OnlineScreen {
     }
 
     // Copiar enlace directo
-    const btnCopyLink = document.getElementById('btnCopyDirectLink');
+    const btnCopyLink = document.getElementById('btnCopyRoomLink');
     if (btnCopyLink) {
       btnCopyLink.addEventListener('click', () => {
         const codeEl = document.getElementById('displayRoomCode');

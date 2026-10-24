@@ -78,6 +78,7 @@ export class GameEngine {
     StorageService.saveMatch(this.state);
     ScreenManager.showScreen('boardScreen');
     this.renderBoard();
+    this.drawWheel();
     const activePlayer = this.getActivePlayer();
     this.setWheelStatus(`🎯 ¡Partida iniciada! Es el turno de ${activePlayer.name} ${activePlayer.avatar}. ¡Pulsa [GIRAR] en la ruleta!`);
   }
@@ -90,6 +91,7 @@ export class GameEngine {
 
     ScreenManager.showScreen('boardScreen');
     this.renderBoard();
+    this.drawWheel();
     const activePlayer = this.getActivePlayer();
     this.setWheelStatus(`🔄 Partida reanudada. Es el turno de ${activePlayer.name} ${activePlayer.avatar}. ¡Gira la ruleta!`);
   }
@@ -109,10 +111,10 @@ export class GameEngine {
   }
 
   public setWheelStatus(htmlMessage: string, isAlert: boolean = false): void {
-    const el = document.getElementById('wheelStatusText');
+    const el = document.getElementById('wheelStatusBox');
     if (!el) return;
     el.innerHTML = htmlMessage;
-    el.classList.toggle('alert', isAlert);
+    el.classList.toggle('respin-alert', isAlert);
   }
 
   public renderBoard(): void {

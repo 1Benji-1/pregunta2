@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Configuración de pestañas Modo Local / Modo Online
   const tabLocal = document.getElementById('tabModeLocal');
   const tabOnline = document.getElementById('tabModeOnline');
-  const viewLocal = document.getElementById('modeLocalView');
-  const viewOnline = document.getElementById('modeOnlineView');
+  const viewLocal = document.getElementById('localSetupContainer');
+  const viewOnline = document.getElementById('onlineSetupContainer');
 
   if (tabLocal && tabOnline && viewLocal && viewOnline) {
     tabLocal.addEventListener('click', () => {
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Modal de Reglas
-  const btnRules = document.getElementById('btnShowRules');
+  const btnRules = document.getElementById('btnOpenRules');
   const rulesModal = document.getElementById('rulesModal') as HTMLDialogElement | null;
   const btnCloseRules = document.getElementById('btnCloseRules');
 
