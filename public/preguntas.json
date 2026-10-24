@@ -1,6 +1,4 @@
-// Banco de preguntas para Preguntados
-// Este archivo permite que el juego funcione abriendo index.html directamente en el navegador
-window.PREGUNTAS_DATA = [
+[
   {
     "categoria": "ARTE Y LITERATURA",
     "dificultad": "facil",
@@ -25201,4 +25199,4 @@ window.PREGUNTAS_DATA = [
       }
     ]
   }
-];
+]

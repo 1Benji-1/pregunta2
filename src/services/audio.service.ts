@@ -1,20 +1,21 @@
 /**
  * Motor de Audio Sintetizado estilo Preguntados (Web Audio API)
- * No requiere archivos MP3 externos y funciona 100% offline.
+ * Funciona 100% offline y sin dependencias externas.
  */
-class SoundEngine {
+export class AudioService {
+  private ctx: AudioContext | null = null;
+  public enabled: boolean = true;
+
   constructor() {
-    this.ctx = null;
-    this.enabled = true;
     const saved = localStorage.getItem('pregunta2_sound');
     if (saved !== null) {
       this.enabled = saved === 'true';
     }
   }
 
-  init() {
+  public init(): void {
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -24,7 +25,7 @@ class SoundEngine {
     }
   }
 
-  toggle() {
+  public toggle(): boolean {
     this.enabled = !this.enabled;
     localStorage.setItem('pregunta2_sound', String(this.enabled));
     if (this.enabled) {
@@ -33,7 +34,13 @@ class SoundEngine {
     return this.enabled;
   }
 
-  playTone(freq, type = 'sine', duration = 0.12, delay = 0, vol = 0.18) {
+  public playTone(
+    freq: number,
+    type: OscillatorType = 'sine',
+    duration: number = 0.12,
+    delay: number = 0,
+    vol: number = 0.18
+  ): void {
     if (!this.enabled) return;
     try {
       this.init();
@@ -55,32 +62,28 @@ class SoundEngine {
       osc.start(startTime);
       osc.stop(startTime + duration);
     } catch (_) {
-      // Ignorar si el navegador bloquea el audio antes de interacción
+      // Ignorar bloqueo de autoplay del navegador
     }
   }
 
-  // Sonido de botón 3D estilo Preguntados
-  playClick() {
+  public playClick(): void {
     this.playTone(520, 'triangle', 0.06, 0, 0.15);
     this.playTone(680, 'sine', 0.05, 0.02, 0.12);
   }
 
-  // Sonido de carraca de la ruleta al pasar cada división
-  playWheelTick(speedFactor = 1) {
+  public playWheelTick(speedFactor: number = 1): void {
     if (!this.enabled) return;
     const freq = 340 + Math.min(280, speedFactor * 180);
     this.playTone(freq, 'triangle', 0.035, 0, 0.14);
   }
 
-  // Fanfarria corta cuando la ruleta cae en una categoría
-  playCategoryLand() {
+  public playCategoryLand(): void {
     this.playTone(523.25, 'triangle', 0.12, 0, 0.2);     // C5
     this.playTone(659.25, 'triangle', 0.12, 0.09, 0.2);  // E5
     this.playTone(783.99, 'triangle', 0.22, 0.18, 0.22); // G5
   }
 
-  // Fanfarria especial dorada cuando cae en CORONA
-  playCrownLand() {
+  public playCrownLand(): void {
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((n, i) => {
       this.playTone(n, 'triangle', 0.18, i * 0.09, 0.24);
@@ -88,35 +91,26 @@ class SoundEngine {
     });
   }
 
-  // Aviso de regiro automático (Opción A)
-  playReSpinAlert() {
+  public playReSpinAlert(): void {
     this.playTone(440, 'sine', 0.12, 0, 0.16);
     this.playTone(554.37, 'sine', 0.12, 0.1, 0.16);
     this.playTone(659.25, 'sine', 0.18, 0.2, 0.18);
   }
 
-  // Beep de últimos 5 segundos en el reloj de 30s
-  playTimerWarning(urgent = false) {
-    this.playTone(urgent ? 880 : 660, 'square', 0.08, 0, 0.12);
-  }
-
-  // Acierto de pregunta
-  playCorrect() {
+  public playCorrect(): void {
     this.playTone(523.25, 'triangle', 0.12, 0, 0.22);     // C5
     this.playTone(659.25, 'triangle', 0.12, 0.08, 0.22);  // E5
     this.playTone(783.99, 'triangle', 0.14, 0.16, 0.22);  // G5
     this.playTone(1046.5, 'triangle', 0.32, 0.24, 0.25);  // C6
   }
 
-  // Fallo o tiempo agotado
-  playWrong() {
+  public playWrong(): void {
     this.playTone(311.13, 'sawtooth', 0.18, 0, 0.18);     // D#4
     this.playTone(277.18, 'sawtooth', 0.22, 0.14, 0.18);  // C#4
     this.playTone(233.08, 'sawtooth', 0.35, 0.28, 0.2);   // A#3
   }
 
-  // Conquista de una categoría (corona ganada)
-  playCategoryWin() {
+  public playCategoryWin(): void {
     const melody = [
       { f: 523.25, d: 0.12, t: 0 },
       { f: 659.25, d: 0.12, t: 0.1 },
@@ -128,8 +122,7 @@ class SoundEngine {
     melody.forEach((n) => this.playTone(n.f, 'triangle', n.d, n.t, 0.24));
   }
 
-  // Victoria final de la partida (6 coronas)
-  playVictory() {
+  public playVictory(): void {
     const melody = [
       { f: 523.25, d: 0.14, t: 0 },
       { f: 659.25, d: 0.14, t: 0.12 },
@@ -143,14 +136,12 @@ class SoundEngine {
     melody.forEach((n) => this.playTone(n.f, 'triangle', n.d, n.t, 0.26));
   }
 
-  // Sonido de activación de Bomba 50:50 (detonación sintética)
-  playBomb() {
+  public playBomb(): void {
     if (!this.enabled) return;
     try {
       this.init();
       if (!this.ctx) return;
       const t = this.ctx.currentTime;
-      // Golpe de impacto grave con caída rápida de frecuencia
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'sawtooth';
@@ -162,24 +153,21 @@ class SoundEngine {
       gain.connect(this.ctx.destination);
       osc.start(t);
       osc.stop(t + 0.4);
-      // Chasquido secundario
       this.playTone(95, 'square', 0.22, 0.05, 0.16);
     } catch (_) {}
   }
 
-  // Sonido de activación de Doble Oportunidad (acorde mágico ascendente)
-  playPowerUp() {
+  public playPowerUp(): void {
     const notes = [440, 554.37, 659.25, 880];
     notes.forEach((n, i) => {
       this.playTone(n, 'triangle', 0.12, i * 0.06, 0.2);
     });
   }
 
-  // Sonido cuando falla el 1er intento pero conserva su 2ª oportunidad
-  playSecondChance() {
+  public playSecondChance(): void {
     this.playTone(493.88, 'sine', 0.12, 0, 0.18);   // B4
     this.playTone(587.33, 'sine', 0.18, 0.1, 0.2);  // D5
   }
 }
 
-window.soundEngine = new SoundEngine();
+export const soundEngine = new AudioService();
