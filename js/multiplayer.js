@@ -27,6 +27,7 @@
       this.roomData = null;
       this.isOnline = false;
       this.lastProcessedActionId = null;
+      this.guestJoinedHandled = false;
 
       this.initFirebase();
     }
@@ -70,6 +71,7 @@
       this.myProfile = hostProfile;
       this.isOnline = true;
       this.lastProcessedActionId = null;
+      this.guestJoinedHandled = false;
 
       const roomRef = this.db.ref(`rooms/${roomCode}`);
       this.roomRef = roomRef;
@@ -151,20 +153,34 @@
         if (!val) return;
         this.roomData = val;
 
-        // Callback cuando el Jugador 2 se une a la sala del anfitrión
-        if (callbacks.onGuestJoined && this.myPlayerIndex === 0 && val.status === 'playing' && val.guest) {
+        // Callback cuando el Jugador 2 se une a la sala del anfitrión (SÓLO UNA VEZ)
+        if (
+          callbacks.onGuestJoined &&
+          this.myPlayerIndex === 0 &&
+          val.status === 'playing' &&
+          val.guest &&
+          !this.guestJoinedHandled
+        ) {
+          this.guestJoinedHandled = true;
           callbacks.onGuestJoined(val.guest, val);
         }
 
-        // Callback cuando cambia el estado general de la partida
-        if (callbacks.onStateUpdate && val.gameState) {
+        // Callback cuando cambia el estado general de la partida (solo para Invitado)
+        if (callbacks.onStateUpdate && this.myPlayerIndex === 1 && val.gameState) {
           callbacks.onStateUpdate(val.gameState);
         }
 
         // Callback para acciones sincronizadas (ruleta, respuestas, comodines)
-        if (callbacks.onAction && val.action && val.action.id !== this.lastProcessedActionId) {
+        if (
+          callbacks.onAction &&
+          val.action &&
+          val.action.id &&
+          val.action.id !== this.lastProcessedActionId
+        ) {
           this.lastProcessedActionId = val.action.id;
-          callbacks.onAction(val.action);
+          if (val.action.fromIndex !== this.myPlayerIndex) {
+            callbacks.onAction(val.action);
+          }
         }
       });
     }
@@ -220,6 +236,7 @@
       this.isOnline = false;
       this.roomData = null;
       this.lastProcessedActionId = null;
+      this.guestJoinedHandled = false;
       sessionStorage.removeItem('pregunta2_room_code');
       sessionStorage.removeItem('pregunta2_my_index');
     }

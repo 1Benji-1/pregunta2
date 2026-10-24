@@ -127,6 +127,7 @@ class Pregunta2Game {
     this.isOnline = false;
     this.myPlayerIndex = 0; // 0 = Anfitrión / J1, 1 = Invitado / J2
     this.selectedAvatarOnline = 0;
+    this.onlineMatchStarted = false;
 
     this.init();
   }
@@ -460,6 +461,7 @@ class Pregunta2Game {
     if (btnCreate) btnCreate.disabled = true;
 
     try {
+      this.onlineMatchStarted = false;
       const hostProfile = { name, avatar: av.emoji, color: av.bg };
       const roomCode = await window.multiplayerManager.createRoom(hostProfile, difficulty);
 
@@ -503,6 +505,7 @@ class Pregunta2Game {
     if (btnJoin) btnJoin.disabled = true;
 
     try {
+      this.onlineMatchStarted = true;
       const guestProfile = { name, avatar: av.emoji, color: av.bg };
       const roomData = await window.multiplayerManager.joinRoom(code, guestProfile);
 
@@ -537,6 +540,13 @@ class Pregunta2Game {
   }
 
   startOnlineMatchAsHost(hostProfile, guestProfile, difficulty) {
+    if (this.onlineMatchStarted) return;
+    this.onlineMatchStarted = true;
+
+    // Ocultar tarjeta de sala de espera
+    const waitingCard = document.getElementById('onlineWaitingCard');
+    if (waitingCard) waitingCard.style.display = 'none';
+
     this.state = {
       difficulty: difficulty,
       currentPlayerIndex: 0,
@@ -553,10 +563,13 @@ class Pregunta2Game {
       ]
     };
 
-    window.multiplayerManager.syncGameState(this.state);
+    // Cambiar vista al tablero de juego y renderizar
     this.showScreen('boardScreen');
     this.renderBoard();
     this.setWheelStatus('🎯 ¡Comienza la partida online! Pulsa [GIRAR] en la ruleta.');
+
+    // Sincronizar el estado del juego con el Invitado
+    window.multiplayerManager.syncGameState(this.state);
   }
 
   handleRemoteAction(action) {
@@ -873,6 +886,7 @@ class Pregunta2Game {
       window.soundEngine.playClick();
       if (this.isOnline) {
         if (!confirm('¿Deseas salir de la sala online? Se desconectará la partida.')) return;
+        this.onlineMatchStarted = false;
         window.multiplayerManager.leaveRoom();
         this.isOnline = false;
         const navOnline = document.getElementById('navOnlineBadge');
