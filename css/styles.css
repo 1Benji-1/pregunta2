@@ -2125,8 +2125,389 @@ dialog.game-modal[open]::backdrop {
   opacity: 0.75;
 }
 
-@media (max-width: 680px) {
+/* ==========================================================================
+   ADAPTACIÓN RESPONSIVA COMPLETA (MÓVILES, TABLETS Y DIFERENTES PANTALLAS)
+   ========================================================================== */
+
+/* Tablets y pantallas medianas (<= 992px) */
+@media (max-width: 992px) {
+  .board-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .wheel-arena {
+    order: -1;
+  }
+  .top-navbar {
+    padding: 8px 16px;
+  }
+  .brand-title {
+    font-size: 1.55rem;
+  }
+  .nav-pills-info {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+}
+
+/* Celulares y Smartphones estándar (<= 768px) */
+@media (max-width: 768px) {
+  /* Cabecera superior compacta */
+  .top-navbar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .brand-logo img {
+    width: 38px;
+    height: 38px;
+  }
+  .brand-title {
+    font-size: 1.35rem;
+  }
+  .nav-actions {
+    gap: 6px;
+  }
+  .nav-actions .btn-3d {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+  .info-Chip {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  /* Lobby / Menú de Inicio en Móvil */
+  .screen-view {
+    padding: 10px 8px 24px;
+  }
+  .lobby-container {
+    border-radius: var(--radius-lg);
+  }
+  .lobby-hero {
+    padding: 20px 14px 18px;
+  }
+  .lobby-hero-characters {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .hero-cat-badge {
+    width: 42px;
+    height: 42px;
+    padding: 3px;
+  }
+  .hero-cat-badge[title*="Willy"] {
+    width: 54px !important;
+    height: 54px !important;
+  }
+  .lobby-hero h1 {
+    font-size: 1.45rem;
+    margin-bottom: 6px;
+  }
+  .lobby-hero p {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+  .lobby-body {
+    padding: 16px 14px 20px;
+    gap: 18px;
+  }
+
+  /* Selector de modo y botones */
+  .mode-tabs {
+    width: 100%;
+    padding: 4px;
+  }
+  .mode-tab-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.88rem;
+    text-align: center;
+  }
+  .players-setup-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .player-setup-card {
+    padding: 14px;
+  }
+  .avatar-picker {
+    gap: 6px;
+  }
+  .avatar-option {
+    width: 38px;
+    height: 38px;
+    font-size: 1.3rem;
+  }
+  .difficulty-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .diff-card {
+    padding: 12px 10px;
+  }
+  .diff-card-title {
+    font-size: 0.98rem;
+  }
+  .diff-card-desc {
+    font-size: 0.78rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .categories-showcase {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .cat-showcase-item {
+    padding: 8px 4px;
+  }
+  .cat-showcase-item img {
+    width: 34px;
+    height: 34px;
+  }
+  .cat-showcase-name {
+    font-size: 0.75rem;
+  }
+  .cat-showcase-char {
+    display: none;
+  }
+  .btn-start-game {
+    width: 100%;
+    font-size: 1.15rem;
+    padding: 14px 18px;
+  }
+
+  /* Tarjetas del Modo Online en Móvil */
   .online-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .online-action-card {
+    padding: 16px 14px;
+  }
+  .online-waiting-card {
+    padding: 20px 14px;
+  }
+  .room-code-display {
+    font-size: 2.1rem;
+    padding: 8px 18px;
+    letter-spacing: 4px;
+    margin: 10px 0 16px;
+  }
+
+  /* Ruleta interactiva adaptada al ancho del celular */
+  .wheel-stage {
+    width: 330px;
+    height: 330px;
+    max-width: 88vw;
+    max-height: 88vw;
+    margin: 4px auto 10px;
+  }
+  .wheel-spin-btn {
+    width: 94px;
+    height: 94px;
+    border-width: 4px;
+  }
+  .wheel-spin-btn img {
+    width: 42px;
+    height: 42px;
+  }
+  .wheel-spin-label {
+    font-size: 0.85rem;
+  }
+  .wheel-pointer {
+    width: 38px;
+    height: 44px;
+    top: -10px;
+  }
+  .turn-banner {
+    font-size: 1rem;
+    padding: 6px 14px;
+    margin-bottom: 8px;
+  }
+  .turn-banner-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 1.15rem;
+  }
+  .wheel-status-box {
+    font-size: 0.88rem;
+    padding: 8px 12px;
+  }
+
+  /* Scoreboard en móvil */
+  .scoreboard-card {
+    padding: 12px;
+    border-radius: var(--radius-lg);
+  }
+  .player-avatar-badge {
+    width: 40px;
+    height: 40px;
+    font-size: 1.35rem;
+  }
+  .player-name-title {
+    font-size: 1.05rem;
+  }
+  .crown-counter-badge {
+    padding: 4px 10px;
+    font-size: 0.88rem;
+  }
+  .medals-rack {
+    gap: 5px;
+    margin: 10px 0;
+  }
+  .medal-slot {
+    width: 38px;
+    height: 38px;
+    padding: 3px;
+  }
+  .cat-progress-row {
+    padding: 5px 8px;
+    font-size: 0.82rem;
+  }
+  .cat-row-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Modal de Pregunta y Cubierta de Privacidad en Móvil */
+  dialog.game-modal {
+    width: calc(100% - 14px);
+    max-height: 95dvh;
+    border-radius: var(--radius-lg);
+  }
+  .question-modal-header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .q-cat-art-wrap {
+    width: 44px;
+    height: 44px;
+    padding: 4px;
+  }
+  .q-cat-meta h2 {
+    font-size: 1.1rem;
+  }
+  .reader-role-box {
+    padding: 4px 10px;
+  }
+  .reader-badge-title {
+    font-size: 0.64rem;
+  }
+  .reader-badge-player {
+    font-size: 0.95rem;
+  }
+  .reader-instruction-bar {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+  }
+  .privacy-shield-container {
+    padding: 22px 14px 26px;
+    gap: 12px;
+  }
+  .privacy-shield-icon {
+    font-size: 2.3rem;
+  }
+  .privacy-shield-title {
+    font-size: 1.3rem;
+  }
+  .privacy-shield-warning {
+    font-size: 0.88rem;
+    line-height: 1.4;
+  }
+  .btn-privacy-reveal {
+    font-size: 0.95rem;
+    padding: 12px 18px;
+    width: 100%;
+  }
+  .question-modal-body {
+    padding: 12px 10px 16px;
+  }
+  .question-statement {
+    font-size: 1.05rem;
+    padding: 12px 14px;
+  }
+  .options-list {
+    gap: 8px;
+  }
+  .option-btn {
+    padding: 10px 12px;
+    font-size: 0.92rem;
+    min-height: 48px;
+  }
+  .crown-category-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .crown-choice-btn {
+    padding: 10px 8px;
+  }
+  .crown-choice-btn img {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Comodines en móvil */
+  .comodines-buttons-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .btn-comodin {
+    padding: 6px 8px;
+  }
+  .comodin-btn-icon {
+    font-size: 1.35rem;
+  }
+  .comodin-btn-title {
+    font-size: 0.82rem;
+  }
+  .comodin-btn-desc {
+    display: none;
+  }
+}
+
+/* Pantallas muy pequeñas (<= 480px, ej. iPhone SE / Galaxy S pequeños) */
+@media (max-width: 480px) {
+  .top-navbar {
+    flex-wrap: wrap;
+  }
+  .wheel-stage {
+    width: 285px;
+    height: 285px;
+    max-width: 86vw;
+    max-height: 86vw;
+  }
+  .wheel-spin-btn {
+    width: 82px;
+    height: 82px;
+  }
+  .wheel-spin-btn img {
+    width: 36px;
+    height: 36px;
+  }
+  .wheel-spin-label {
+    font-size: 0.78rem;
+  }
+  .difficulty-grid {
+    grid-template-columns: 1fr;
+  }
+  .categories-showcase {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .waiting-actions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .waiting-actions-row .btn-3d {
+    width: 100%;
+  }
+  .crown-category-grid {
     grid-template-columns: 1fr;
   }
 }
